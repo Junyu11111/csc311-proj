@@ -1,1 +1,1 @@
-# csc311-proj
+# CSC311 Project
