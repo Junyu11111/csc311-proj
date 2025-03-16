@@ -246,7 +246,7 @@ def text_to_numeric(df, feature_columns, label_column):
     for feature in feature_columns:
         vocab = extract_vocab(df, feature)
 
-        data_pairs = list(zip(df[feature].tolist(), df[label_column].tolist()))
+        data_pairs = list(zip(df[feature].astype(str).tolist(), df[label_column].tolist()))
         X, t, label_mapping = make_bow(data_pairs, vocab)
 
         pi, theta = naive_bayes_map(X, t, len(label_mapping))
@@ -256,9 +256,10 @@ def text_to_numeric(df, feature_columns, label_column):
 
 if __name__ == "__main__":
     file_name = "cleaned_data_combined.csv"
+    data_path = Path.cwd().parent / file_name
     random_state = 42
     # Read the CSV file from the parent directory.
-    data_path = Path.cwd().parent / file_name
+
     print("Data file:", data_path)
     df = pd.read_csv(data_path)
 
