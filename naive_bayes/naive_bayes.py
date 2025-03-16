@@ -212,7 +212,7 @@ def text_to_one_hot_vocab(df, feature_columns, label_column):
     modified_df = pd.concat([df, bow_df], axis=1)
     return modified_df, vocab
 
-def text_to_numeric(df, feature_columns, label_column):
+def text_to_numeric(df, feature_columns, label_column, train_percent):
     """
     Convert text features into numeric Naive Bayes probability features and append them to the original DataFrame.
 
@@ -234,7 +234,7 @@ def text_to_numeric(df, feature_columns, label_column):
     ... })
     >>> feature_columns = ["feature1", "feature2"]
     >>> label_column = "label"
-    >>> modified_df, vocab = text_to_numeric(df, feature_columns, label_column)
+    >>> modified_df, vocab = text_to_numeric(df, feature_columns, label_column, 1)
     >>> print(modified_df.to_string())
       feature1 feature2  label  nb_prob_pizza_feature1  nb_prob_sushi_feature1  nb_prob_pizza_feature2  nb_prob_sushi_feature2
     0      a c        b  pizza                0.654987                0.345013                0.919294                0.080706
@@ -248,8 +248,10 @@ def text_to_numeric(df, feature_columns, label_column):
 
         data_pairs = list(zip(df[feature].astype(str).tolist(), df[label_column].tolist()))
         X, t, label_mapping = make_bow(data_pairs, vocab)
+        n_train = int(train_percent * X.shape[0])
+        X_train, t_train = X[:n_train], t[:n_train]
 
-        pi, theta = naive_bayes_map(X, t, len(label_mapping))
+        pi, theta = naive_bayes_map(X_train, t_train, len(label_mapping))
         modified_df = integrate_nb_predictions(modified_df, X, pi, theta, label_mapping, feature)
 
     return modified_df, vocab
