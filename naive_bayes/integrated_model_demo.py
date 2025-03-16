@@ -31,6 +31,7 @@ def to_numeric(s):
     return float(s)
 
 if __name__ == "__main__":
+    train_percent = 0.8
 
     df = pd.read_csv(data_path)
 
@@ -45,7 +46,7 @@ if __name__ == "__main__":
     ]
     label = "Label"
 
-    df, vocab = text_to_numeric(df, text_features, label)
+    df, vocab = text_to_numeric(df, text_features, label, train_percent)
 
     converted_text_features = df.columns[-len(text_features)*len(df[label].unique()):].tolist()
 
@@ -72,7 +73,7 @@ if __name__ == "__main__":
     y = df[[col for col in df.columns if col.startswith("Label_")]].values
 
     # Train-test split
-    n_train = int(0.8 * len(df))
+    n_train = int(train_percent * len(df))
     x_train = x[:n_train]
     y_train = y[:n_train]
 
