@@ -10,9 +10,11 @@ where appropriate, but don't stop here!
 import re
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import LabelEncoder
+from sklearn.linear_model import LogisticRegression
 from naive_bayes import text_to_one_hot_vocab, text_to_numeric
 
 file_name = "cleaned_data_combined.csv"
@@ -46,7 +48,7 @@ if __name__ == "__main__":
     ]
     label = "Label"
 
-    df, vocab = text_to_numeric(df, text_features, label, train_percent)
+    df, vocab = text_to_numeric(df, text_features, label, train_percent, a=0.05, b=0)
 
     converted_text_features = df.columns[-len(text_features)*len(df[label].unique()):].tolist()
 
@@ -65,12 +67,14 @@ if __name__ == "__main__":
 
     # Convert categorical labels to numerical values
     df = pd.get_dummies(df, columns=["Label"], prefix="Label")
+    print(df.head())
 
     # Shuffle the dataset
     df = df.sample(frac=1, random_state=random_state)
 
     x = df.drop(columns=[col for col in df.columns if col.startswith("Label_")]).values
     y = df[[col for col in df.columns if col.startswith("Label_")]].values
+    y = np.argmax(y, axis=1)
 
     # Train-test split
     n_train = int(train_percent * len(df))
@@ -81,7 +85,7 @@ if __name__ == "__main__":
     y_test = y[n_train:]
 
     # Train and evaluate a kNN classifier
-    clf = KNeighborsClassifier(n_neighbors=3)
+    clf = LogisticRegression(max_iter=10000)
     clf.fit(x_train, y_train)
     train_acc = clf.score(x_train, y_train)
     test_acc = clf.score(x_test, y_test)
