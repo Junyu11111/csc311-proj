@@ -85,16 +85,15 @@ def naive_bayes_map(X, t, n_labels, a_class=1.0, a_feat=1.0, b_feat=3.0):
     allowing hyperparameters for the class prior and the Beta prior on features.
 
     Parameters:
-        X:            Binary feature matrix [N, V]
-        t:            Integer label vector [N]
-        n_labels:     Number of labels/classes
-        a_class:  Hyperparameter for class priors (Dirichlet prior).
-                      Typically a_class = 1.0 -> uniform prior
-        a_feat:   Hyperparameter α for the Beta(α, β) feature prior
-        b_feat:    Hyperparameter β for the Beta(α, β) feature prior
+        X: Binary feature matrix [N, V]
+        t: Integer label vector [N]
+        n_labels: Number of labels/classes
+        a_class: Hyperparameter for class priors (Dirichlet prior).
+        a_feat: Hyperparameter α for the Beta(α, β) feature prior
+        b_feat: Hyperparameter β for the Beta(α, β) feature prior
 
     Returns:
-        pi:    Array of shape [n_labels], the MAP class priors
+        pi: Array of shape [n_labels], the MAP class priors
         theta: Array of shape [V, n_labels], the MAP feature probabilities
     """
     N, V = X.shape
@@ -236,6 +235,8 @@ def text_to_numeric(df, feature_columns, label_column, train_percent, a=1, b=1):
         df: Pandas DataFrame.
         feature_columns: List of column names to use as text features.
         label_column: Column name for the target label.
+        a: Hyperparameter α for the Beta(α, β) feature prior
+        b: Hyperparameter β for the Beta(α, β) feature prior
 
     Returns:
         model_df: Modified Pandas DataFrame with added columns.
@@ -322,7 +323,6 @@ if __name__ == "__main__":
             x, y = params
             a = np.exp(x)  # a is always > 0
             b = np.exp(y)  # b is always > 0
-            # Run your training procedure
             pi, theta = naive_bayes_map(X_train, t_train, n_labels, a_feat=a, b_feat=b)
             test_preds = make_prediction(X_test, pi, theta)
             test_acc = accuracy(test_preds, t_test)
