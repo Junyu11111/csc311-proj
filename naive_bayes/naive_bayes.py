@@ -2,6 +2,8 @@ import re
 import pandas as pd
 import numpy as np
 from pathlib import Path
+from scipy.optimize import minimize
+from sklearn.linear_model import LogisticRegression
 
 
 def select_features(df, feature_cols, label_col):
@@ -76,18 +78,24 @@ def make_bow(data, vocab, label_mapping=None):
 
     return X, t, label_mapping
 
-def naive_bayes_map(X, t, n_labels):
+
+def naive_bayes_map(X, t, n_labels, a_class=1.0, a_feat=1.0, b_feat=3.0):
     """
-    Compute MAP estimates for a multiclass Naive Bayes model.
+    Compute MAP estimates for a multiclass Bernoulli Naive Bayes model,
+    allowing hyperparameters for the class prior and the Beta prior on features.
 
     Parameters:
-        X: Binary feature matrix [N, V]
-        t: Integer label vector [N]
-        n_labels: Number of labels
+        X:            Binary feature matrix [N, V]
+        t:            Integer label vector [N]
+        n_labels:     Number of labels/classes
+        a_class:  Hyperparameter for class priors (Dirichlet prior).
+                      Typically a_class = 1.0 -> uniform prior
+        a_feat:   Hyperparameter α for the Beta(α, β) feature prior
+        b_feat:    Hyperparameter β for the Beta(α, β) feature prior
 
     Returns:
-        pi: Array of shape [n_labels] representing class priors.
-        theta: Array of shape [V, n_labels] representing feature likelihoods.
+        pi:    Array of shape [n_labels], the MAP class priors
+        theta: Array of shape [V, n_labels], the MAP feature probabilities
     """
     N, V = X.shape
     K = n_labels
@@ -96,9 +104,17 @@ def naive_bayes_map(X, t, n_labels):
     Y = np.zeros((N, K))
     Y[np.arange(N), t] = 1
 
-    Nk = Y.sum(axis=0)  # Count per class
-    pi = (Nk + 1) / (N + K)
-    theta = (X.T.dot(Y) + 1) / (Nk + 2)
+    # Count of examples in each class
+    Nk = Y.sum(axis=0)  # shape [K]
+
+    # MAP estimate of class priors with Dirichlet(alpha_class)
+    # If alpha_class=1, we revert to (Nk + 1) / (N + K).
+    pi = (Nk + a_class ) / (N + K * a_class)
+
+    # MAP estimate of Bernoulli parameters with Beta(alpha_feat, beta_feat)
+    # For each class k and feature v:
+    #   θ_{v,k} = ( # of times feature v=1 in class k + alpha_feat ) / ( Nk + alpha_feat + beta_feat )
+    theta = (X.T.dot(Y) + a_feat) / (Nk + a_feat + b_feat)
 
     return pi, theta
 
@@ -212,7 +228,7 @@ def text_to_one_hot_vocab(df, feature_columns, label_column):
     modified_df = pd.concat([df, bow_df], axis=1)
     return modified_df, vocab
 
-def text_to_numeric(df, feature_columns, label_column, train_percent):
+def text_to_numeric(df, feature_columns, label_column, train_percent, a=1, b=1):
     """
     Convert text features into numeric Naive Bayes probability features and append them to the original DataFrame.
 
@@ -251,7 +267,7 @@ def text_to_numeric(df, feature_columns, label_column, train_percent):
         n_train = int(train_percent * X.shape[0])
         X_train, t_train = X[:n_train], t[:n_train]
 
-        pi, theta = naive_bayes_map(X_train, t_train, len(label_mapping))
+        pi, theta = naive_bayes_map(X_train, t_train, len(label_mapping), a_feat=a, b_feat=b)
         modified_df = integrate_nb_predictions(modified_df, X, pi, theta, label_mapping, feature)
 
     return modified_df, vocab
@@ -267,50 +283,66 @@ if __name__ == "__main__":
 
 
     feature_columns = [
-        # "Q1: From a scale 1 to 5, how complex is it to make this food? (Where 1 is the most simple, and 5 is the most complex)",
-        # "Q2: How many ingredients would you expect this food item to contain?",
+        "Q1: From a scale 1 to 5, how complex is it to make this food? (Where 1 is the most simple, and 5 is the most complex)",
+        "Q2: How many ingredients would you expect this food item to contain?",
         "Q3: In what setting would you expect this food to be served? Please check all that apply",
-        # "Q4: How much would you expect to pay for one serving of this food item?",
+        "Q4: How much would you expect to pay for one serving of this food item?",
         "Q5: What movie do you think of when thinking of this food item?",
         "Q6: What drink would you pair with this food item?",
-        # "Q7: When you think about this food item, who does it remind you of?",
-        # "Q8: How much hot sauce would you add to this food item?"
+        "Q7: When you think about this food item, who does it remind you of?",
+        "Q8: How much hot sauce would you add to this food item?"
     ]
     label_column = "Label"
+    hyperparams_ab = {}
+    for feature in feature_columns:
+        print("Feature:", feature)
+        # Merge all text cols.
+        df_selected = select_features(df, [feature], label_column)
+        # Shuffle the dataset.
+        df_selected = df_selected.sample(frac=1, random_state=random_state).reset_index(drop=True)
+
+        # Extract vocabulary from the combined text field.
+        vocab = extract_vocab(df_selected, "combined_text")
+        print(f"Combined vocabulary size: {len(vocab)}")
+
+        data_pairs = list(zip(df_selected["combined_text"].tolist(), df_selected[label_column].tolist()))
+
+        # Build bow matrix and label mapping.
+        X, t, label_mapping = make_bow(data_pairs, vocab)
+        print("Label mapping:", label_mapping)
+
+        n_train = int(0.8 * X.shape[0])
+        X_train, t_train = X[:n_train], t[:n_train]
+        X_test, t_test = X[n_train:], t[n_train:]
+
+        n_labels = len(label_mapping)
+        a_lst = np.logspace(-10, 0, 200)
+        b_lst = np.logspace(-30, 0, 4)
+        def objective(params):
+            x, y = params
+            a = np.exp(x)  # a is always > 0
+            b = np.exp(y)  # b is always > 0
+            # Run your training procedure
+            pi, theta = naive_bayes_map(X_train, t_train, n_labels, a_feat=a, b_feat=b)
+            test_preds = make_prediction(X_test, pi, theta)
+            test_acc = accuracy(test_preds, t_test)
+            return -test_acc
+        initial_guess = np.array([0.1, 0.1])
+        result = minimize(objective, x0=initial_guess, method='Powell')
+        best_params = np.exp(result.x)
+        hyperparams_ab[feature]=best_params.tolist()
+
+        pi, theta = naive_bayes_map(X_train, t_train, n_labels, a_feat=best_params[0], b_feat=best_params[1])
+        test_preds = make_prediction(X_test, pi, theta)
+        test_acc = accuracy(test_preds, t_test)
+        print("Naive Bayes Valid Acc:", test_acc)
+        lr = LogisticRegression(max_iter=1000)
+        lr.fit(X_train, t_train)
+        val_acc = lr.score(X_test, t_test)
+        print("LR Valid Acc:", val_acc)
+    print(hyperparams_ab)
 
 
-    # Merge all text cols.
-    df_selected = select_features(df, feature_columns, label_column)
-    # Shuffle the dataset.
-    df_selected = df_selected.sample(frac=1, random_state=random_state).reset_index(drop=True)
-
-    # Extract vocabulary from the combined text field.
-    vocab = extract_vocab(df_selected, "combined_text")
-    print(f"Combined vocabulary size: {len(vocab)}")
-
-    data_pairs = list(zip(df_selected["combined_text"].tolist(), df_selected[label_column].tolist()))
-
-    # Build bow matrix and label mapping.
-    X, t, label_mapping = make_bow(data_pairs, vocab)
-    print("Label mapping:", label_mapping)
-
-    n_train = int(0.8 * X.shape[0])
-    X_train, t_train = X[:n_train], t[:n_train]
-    X_test, t_test = X[n_train:], t[n_train:]
-
-    n_labels = len(label_mapping)
-    pi, theta = naive_bayes_map(X_train, t_train, n_labels)
-
-    train_preds = make_prediction(X_train, pi, theta)
-    test_preds = make_prediction(X_test, pi, theta)
-
-    print(f"Naive Bayes MAP Train Accuracy: {accuracy(train_preds, t_train):.4f}")
-    print(f"Naive Bayes MAP Test Accuracy: {accuracy(test_preds, t_test):.4f}")
-
-    # # Convert numeric predictions back to label strings for display.
-    # inv_label_mapping = {v: k for k, v in label_mapping.items()}
-    # test_pred_labels = [inv_label_mapping[p] for p in test_preds]
-    # print("Sample Test Predictions:", test_pred_labels[:10])
 
     # from sklearn.linear_model import LogisticRegression
     #
