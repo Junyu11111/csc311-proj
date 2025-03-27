@@ -12,7 +12,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.ensemble import RandomForestClassifier
 
 TRAINFILE = "cleaned_data_combined_modified.csv"
-hyperparams_ab = {'Q1: From a scale 1 to 5, how complex is it to make this food? (Where 1 is the most simple, and 5 is the most complex)': [1.1051709180756477, 1.1051709180756477], 'Q2: How many ingredients would you expect this food item to contain?': [0.41363180694740936, 1.1051709180756477], 'Q3: In what setting would you expect this food to be served? Please check all that apply': [1.1051709180756477, 1.1051709180756477], 'Q4: How much would you expect to pay for one serving of this food item?': [0.439637343823438, 2.072337337822877], 'Q5: What movie do you think of when thinking of this food item?': [0.20727605609880317, 19.950067030441787], 'Q6: What drink would you pair with this food item?': [0.36669185844956026, 1.1051709180756477], 'Q7: When you think about this food item, who does it remind you of?': [8.452327448945514, 12.34581521303121], 'Q8: How much hot sauce would you add to this food item?': [1.1051709180756477, 1.1051709180756477]}
+hyperparams_ab = {'Q1: From a scale 1 to 5, how complex is it to make this food? (Where 1 is the most simple, and 5 is the most complex)': [1.1051709180756477, 1.1051709180756477], 'Q2: How many ingredients would you expect this food item to contain?': [1.3976083313721242e-13, 0.6215642319337298], 'Q3: In what setting would you expect this food to be served? Please check all that apply': [13.336718587418781, 0.6174191599884395], 'Q4: How much would you expect to pay for one serving of this food item?': [0.00026754091885852554, 1.1051709180756477], 'Q5: What movie do you think of when thinking of this food item?': [0.0013121764345119399, 7.244156166740926], 'Q6: What drink would you pair with this food item?': [0.006595397401169781, 1.1051709180756477], 'Q7: When you think about this food item, who does it remind you of?': [0.2232578131743815, 1.1051709180756477], 'Q8: How much hot sauce would you add to this food item?': [3.056348578264306, 1.1051709180756477]}
 
 
 
@@ -64,7 +64,7 @@ def extract_number(value: Union[str, float, None]) -> float:
     return float(numbers[0])
 
 
-def create_text_features(df: pd.DataFrame, column: str) -> np.ndarray:
+def create_text_features(df: pd.DataFrame, column: str, train_percent = 0.8) -> np.ndarray:
     """
     Converts a text column into a binary feature matrix based on the vocabulary.
 
@@ -76,7 +76,8 @@ def create_text_features(df: pd.DataFrame, column: str) -> np.ndarray:
         np.ndarray: A binary matrix where each row represents an observation and each column
                     represents whether the corresponding vocabulary word appears in the text.
     """
-    vocab = extract_vocab(df, column)
+    train_data = df.head(int(len(df)*train_percent))
+    vocab = extract_vocab(train_data, column)
     word_to_index: Dict[str, int] = {word: idx for idx, word in enumerate(vocab)}
     N = len(df)
     V = len(vocab)
@@ -91,8 +92,8 @@ def create_text_features(df: pd.DataFrame, column: str) -> np.ndarray:
                 X_bin[i, idx] = 1
     return X_bin
 
-def create_bayes_features(df: pd.DataFrame, column: str, train_percent: float) -> np.ndarray:
-    X = create_text_features(df, column)
+def create_bayes_features(df: pd.DataFrame, column: str, train_percent: float, hyperparams_ab: dict) -> np.ndarray:
+    X = create_text_features(df, column, train_percent)
     t = create_t(df)
     n_train = int(train_percent * X.shape[0])
     X_train, t_train = X[:n_train], t[:n_train]
@@ -245,7 +246,7 @@ def create_t(df: pd.DataFrame, label="Label"):
     return t
 
 def create_X_t_selection(df, num_cols: list[str], bayes_cols: list[str], text_cols: list[str],
-                         train_percent:float) -> Tuple[np.ndarray, np.ndarray]:
+                         train_percent:float, hyperparams_ab) -> Tuple[np.ndarray, np.ndarray]:
     N = len(df)
     X_parts = []  # Collect all features here
 
@@ -256,12 +257,12 @@ def create_X_t_selection(df, num_cols: list[str], bayes_cols: list[str], text_co
 
     # Process text columns
     for col in text_cols:
-        text_features = create_text_features(df, col)
+        text_features = create_text_features(df, col, train_percent)
         X_parts.append(text_features)
 
     # Process Bayesian columns
     for col in bayes_cols:
-        bayes_features = create_bayes_features(df, col, train_percent)
+        bayes_features = create_bayes_features(df, col, train_percent, hyperparams_ab)
         X_parts.append(bayes_features)
 
     # Concatenate all features horizontally
@@ -274,7 +275,7 @@ def create_X_t_selection(df, num_cols: list[str], bayes_cols: list[str], text_co
 
 
 if __name__ == "__main__":
-    train_percent = 0.3
+    train_percent = 0.8 # 0-1
 
     feature_columns = [
         "Q1: From a scale 1 to 5, how complex is it to make this food? (Where 1 is the most simple, and 5 is the most complex)",
@@ -292,18 +293,18 @@ if __name__ == "__main__":
         "Q4: How much would you expect to pay for one serving of this food item?",
     ]
     candidate_text_cols = [
-        "Q3: In what setting would you expect this food to be served? Please check all that apply",
-        "Q5: What movie do you think of when thinking of this food item?",
-        "Q6: What drink would you pair with this food item?",
-        "Q7: When you think about this food item, who does it remind you of?",
-        "Q8: How much hot sauce would you add to this food item?"
+        # "Q3: In what setting would you expect this food to be served? Please check all that apply",
+        # "Q5: What movie do you think of when thinking of this food item?",
+        # "Q6: What drink would you pair with this food item?",
+        # "Q7: When you think about this food item, who does it remind you of?",
+        # "Q8: How much hot sauce would you add to this food item?"
     ]
     candidate_bayes_cols = [
         "Q3: In what setting would you expect this food to be served? Please check all that apply",
         "Q5: What movie do you think of when thinking of this food item?",
         "Q6: What drink would you pair with this food item?",
-        "Q7: When you think about this food item, who does it remind you of?",
-        "Q8: How much hot sauce would you add to this food item?"
+        # "Q7: When you think about this food item, who does it remind you of?",
+        # "Q8: How much hot sauce would you add to this food item?"
     ]
 
 
@@ -313,7 +314,7 @@ if __name__ == "__main__":
     file_name = "cleaned_data_combined.csv"
     data_path = Path.cwd().parent / file_name
     df = pd.read_csv(data_path)
-    X, t = create_X_t_selection(df, candidate_num_cols, candidate_bayes_cols, candidate_text_cols, train_percent)
+    X, t = create_X_t_selection(df, candidate_num_cols, candidate_bayes_cols, candidate_text_cols, train_percent, hyperparams_ab)
 
     # Use NumPy to split the data into 80% training and 20% testing sets
     N = X.shape[0]
