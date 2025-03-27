@@ -40,7 +40,7 @@ def extract_categories(df: pd.DataFrame, option_column: str) -> List[str]:
     option_set = set()
     for options in df[option_column].dropna():
         # Split the string by commas and add each option to the set after stripping whitespace
-        for option in options.split(','):
+        for option in str(options).split(','):
             option_set.add(option.strip())
     return list(option_set)
 
@@ -110,7 +110,7 @@ def create_category_features(df: pd.DataFrame, column: str) -> np.ndarray:
     X_bin = np.zeros((N, V), dtype=int)
     # Iterate through each text entry to populate the binary feature matrix
     for i, options in enumerate(df[column].fillna('')):
-        for option in options.split(','):
+        for option in str(options).split(','):
             option = option.strip()
             if option in cat_to_index:
                 X_bin[i, cat_to_index[option]] = 1
@@ -331,13 +331,6 @@ if __name__ == "__main__":
         # "Q7: When you think about this food item, who does it remind you of?",
         # "Q8: How much hot sauce would you add to this food item?"
     ]
-    candidate_category_cols = [
-        "Q3: In what setting would you expect this food to be served? Please check all that apply",
-        "Q5: What movie do you think of when thinking of this food item?",
-        "Q6: What drink would you pair with this food item?",
-        "Q7: When you think about this food item, who does it remind you of?",
-        "Q8: How much hot sauce would you add to this food item?"
-    ]
     candidate_bayes_cols = [
         # "Q3: In what setting would you expect this food to be served? Please check all that apply",
         "Q5: What movie do you think of when thinking of this food item?",
@@ -345,6 +338,17 @@ if __name__ == "__main__":
         # "Q7: When you think about this food item, who does it remind you of?",
         # "Q8: How much hot sauce would you add to this food item?"
     ]
+    candidate_category_cols = [
+        # "Q1: From a scale 1 to 5, how complex is it to make this food? (Where 1 is the most simple, and 5 is the most complex)",
+        # "Q2: How many ingredients would you expect this food item to contain?",
+        "Q3: In what setting would you expect this food to be served? Please check all that apply",
+        # "Q4: How much would you expect to pay for one serving of this food item?",
+        "Q5: What movie do you think of when thinking of this food item?",
+        # "Q6: What drink would you pair with this food item?",
+        "Q7: When you think about this food item, who does it remind you of?",
+        "Q8: How much hot sauce would you add to this food item?"
+    ]
+
 
 
 
@@ -381,7 +385,6 @@ if __name__ == "__main__":
                 ):
                     if not (num_subset or text_subset or bayes_subset or category_subset):
                         continue
-                    # Build feature matrix using your helper function
                     X, t = create_X_t_selection(
                         df,
                         list(num_subset),
@@ -396,7 +399,7 @@ if __name__ == "__main__":
                     t_train, t_test = t[train_indices], t[test_indices]
 
                     # Initialize and train the classifier
-                    test_model = RandomForestClassifier(n_estimators=10, random_state=42)
+                    test_model = LogisticRegression(max_iter=10000)
                     test_model.fit(X_train, t_train)
 
                     # Evaluate the model on the test set
@@ -408,12 +411,14 @@ if __name__ == "__main__":
                     if c % 10 == 0:
                         print("Iteration:", c)
                     c += 1
+    print("Best CV accuracy:", best_score)
+    print("Best feature combination: num_subset, text_subset, bayes_subset, category_subset")
+    for i in best_combo: print(i)
+
 
     X_train, X_test = X[train_indices], X[test_indices]
     t_train, t_test = t[train_indices], t[test_indices]
-    print("Best CV accuracy:", best_score)
-    print("Best feature combination:")
-    for i in best_combo: print(i)
+
 
     print("Training feature matrix shape:", X_train.shape)
     print("Testing feature matrix shape:", X_test.shape)
