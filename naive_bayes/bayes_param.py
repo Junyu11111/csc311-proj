@@ -51,9 +51,17 @@ if __name__ == "__main__":
         X = create_text_features(df, feature, train_percent)
         t = create_t(df, label_column)
         hyperparams_ab[feature] = t
-        n_train = int(train_percent * X.shape[0])
-        X_train, t_train = X[:n_train], t[:n_train]
-        X_test, t_test = X[n_train:], t[n_train:]
+
+        N = X.shape[0]
+        indices = np.arange(N)
+        np.random.seed(42)
+        np.random.shuffle(indices)
+
+        train_size = int(train_percent * N)
+        train_indices = indices[:train_size]
+        test_indices = indices[train_size:]
+        X_train, X_test = X[train_indices], X[test_indices]
+        t_train, t_test = t[train_indices], t[test_indices]
 
         labels = df[label_column].fillna("").astype(str)
         unique_labels = sorted({label.strip() for label in labels})
