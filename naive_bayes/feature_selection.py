@@ -418,7 +418,7 @@ if __name__ == "__main__":
                             print("New best score:", best_score, "with combo:", best_combo)
                             writer.writerow([c, score, num_subset, text_subset, bayes_subset, category_subset])
                             csvfile.flush()
-                        if c % 10 == 0:
+                        if c % 100 == 0:
                             print("Iteration:", c)
                         c += 1
     print("Best CV accuracy:", best_score)
