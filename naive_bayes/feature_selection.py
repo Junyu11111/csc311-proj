@@ -1,4 +1,5 @@
 """Clean up CSV, create training matrix and test Logistic Regression"""
+import csv
 import itertools
 import re
 from pathlib import Path
@@ -14,8 +15,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import cross_val_score
 
 TRAINFILE = "cleaned_data_combined_modified.csv"
-hyperparams_ab = {'Q1: From a scale 1 to 5, how complex is it to make this food? (Where 1 is the most simple, and 5 is the most complex)': [1.1051709180756477, 1.1051709180756477], 'Q2: How many ingredients would you expect this food item to contain?': [1.3976083313721242e-13, 0.6215642319337298], 'Q3: In what setting would you expect this food to be served? Please check all that apply': [13.336718587418781, 0.6174191599884395], 'Q4: How much would you expect to pay for one serving of this food item?': [0.00026754091885852554, 1.1051709180756477], 'Q5: What movie do you think of when thinking of this food item?': [0.0013121764345119399, 7.244156166740926], 'Q6: What drink would you pair with this food item?': [0.006595397401169781, 1.1051709180756477], 'Q7: When you think about this food item, who does it remind you of?': [0.2232578131743815, 1.1051709180756477], 'Q8: How much hot sauce would you add to this food item?': [3.056348578264306, 1.1051709180756477]}
-
+hyperparams_ab = {'Q1: From a scale 1 to 5, how complex is it to make this food? (Where 1 is the most simple, and 5 is the most complex)': [1.1051709180756477, 1.1051709180756477], 'Q2: How many ingredients would you expect this food item to contain?': [0.6020643878326896, 31369.511524776786], 'Q3: In what setting would you expect this food to be served? Please check all that apply': [1.1051709180756477, 2.072337337822877], 'Q4: How much would you expect to pay for one serving of this food item?': [3.056348578318605, 1.1051709180756477], 'Q5: What movie do you think of when thinking of this food item?': [0.2295748145660036, 1.1051709180756477], 'Q6: What drink would you pair with this food item?': [3.944756346080535, 1.1051709180756477], 'Q7: When you think about this food item, who does it remind you of?': [0.2232578131743815, 208.04212455279884], 'Q8: How much hot sauce would you add to this food item?': [1.1051709180756477, 1.1051709180756477]}
 
 
 def extract_vocab(df: pd.DataFrame, text_column: str) -> List[str]:
@@ -40,7 +40,7 @@ def extract_categories(df: pd.DataFrame, option_column: str) -> List[str]:
     option_set = set()
     for options in df[option_column].dropna():
         # Split the string by commas and add each option to the set after stripping whitespace
-        for option in options.split(','):
+        for option in str(options).split(','):
             option_set.add(option.strip())
     return list(option_set)
 
@@ -110,7 +110,7 @@ def create_category_features(df: pd.DataFrame, column: str) -> np.ndarray:
     X_bin = np.zeros((N, V), dtype=int)
     # Iterate through each text entry to populate the binary feature matrix
     for i, options in enumerate(df[column].fillna('')):
-        for option in options.split(','):
+        for option in str(options).split(','):
             option = option.strip()
             if option in cat_to_index:
                 X_bin[i, cat_to_index[option]] = 1
@@ -331,20 +331,24 @@ if __name__ == "__main__":
         # "Q7: When you think about this food item, who does it remind you of?",
         # "Q8: How much hot sauce would you add to this food item?"
     ]
-    candidate_category_cols = [
+    candidate_bayes_cols = [
         "Q3: In what setting would you expect this food to be served? Please check all that apply",
         "Q5: What movie do you think of when thinking of this food item?",
         "Q6: What drink would you pair with this food item?",
         "Q7: When you think about this food item, who does it remind you of?",
         "Q8: How much hot sauce would you add to this food item?"
     ]
-    candidate_bayes_cols = [
-        # "Q3: In what setting would you expect this food to be served? Please check all that apply",
+    candidate_category_cols = [
+        "Q1: From a scale 1 to 5, how complex is it to make this food? (Where 1 is the most simple, and 5 is the most complex)",
+        "Q2: How many ingredients would you expect this food item to contain?",
+        "Q3: In what setting would you expect this food to be served? Please check all that apply",
+        "Q4: How much would you expect to pay for one serving of this food item?",
         "Q5: What movie do you think of when thinking of this food item?",
         "Q6: What drink would you pair with this food item?",
-        # "Q7: When you think about this food item, who does it remind you of?",
-        # "Q8: How much hot sauce would you add to this food item?"
+        "Q7: When you think about this food item, who does it remind you of?",
+        "Q8: How much hot sauce would you add to this food item?"
     ]
+
 
 
 
@@ -358,105 +362,72 @@ if __name__ == "__main__":
     indices = np.arange(N)
     np.random.seed(42)
     np.random.shuffle(indices)
+    df_shuffled = df.iloc[indices]
 
     train_size = int(train_percent * N)
+    np.random.seed(78)
+    np.random.shuffle(indices)
     train_indices = indices[:train_size]
     test_indices = indices[train_size:]
-
     best_score = -np.inf
     best_combo = None
     c = 0
-    for num_subset in itertools.chain.from_iterable(
-            itertools.combinations(candidate_num_cols, r) for r in range(0, len(candidate_num_cols) + 1)
-    ):
-        for text_subset in itertools.chain.from_iterable(
-                itertools.combinations(candidate_text_cols, r) for r in range(0, len(candidate_text_cols) + 1)
+    # Open the CSV file for logging best scores.
+    with open("best_score_log.csv", "w", newline="") as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(["iteration", "score", "num_subset", "text_subset", "bayes_subset", "category_subset"])
+
+        # Loop over all possible combinations of candidate columns (features).
+        for num_subset in itertools.chain.from_iterable(
+                itertools.combinations(candidate_num_cols, r) for r in range(0, len(candidate_num_cols) + 1)
         ):
-            for bayes_subset in itertools.chain.from_iterable(
-                    itertools.combinations(candidate_bayes_cols, r) for r in range(0, len(candidate_bayes_cols) + 1)
+            for text_subset in itertools.chain.from_iterable(
+                    itertools.combinations(candidate_text_cols, r) for r in range(0, len(candidate_text_cols) + 1)
             ):
-                for category_subset in itertools.chain.from_iterable(
-                        itertools.combinations(candidate_category_cols, r) for r in
-                        range(0, len(candidate_category_cols) + 1)
+                for bayes_subset in itertools.chain.from_iterable(
+                        itertools.combinations(candidate_bayes_cols, r) for r in range(0, len(candidate_bayes_cols) + 1)
                 ):
-                    if not (num_subset or text_subset or bayes_subset or category_subset):
-                        continue
-                    # Build feature matrix using your helper function
-                    X, t = create_X_t_selection(
-                        df,
-                        list(num_subset),
-                        list(bayes_subset),
-                        list(text_subset),
-                        list(category_subset),
-                        train_percent,
-                        hyperparams_ab
-                    )
+                    for category_subset in itertools.chain.from_iterable(
+                            itertools.combinations(candidate_category_cols, r) for r in
+                            range(0, len(candidate_category_cols) + 1)
+                    ):
+                        if not (num_subset or text_subset or bayes_subset or category_subset):
+                            continue
+                        X, t = create_X_t_selection(
+                            df_shuffled,
+                            list(num_subset),
+                            list(bayes_subset),
+                            list(text_subset),
+                            list(category_subset),
+                            train_percent,
+                            hyperparams_ab
+                        )
 
-                    X_train, X_test = X[train_indices], X[test_indices]
-                    t_train, t_test = t[train_indices], t[test_indices]
+                        X_train, X_test = X[train_indices], X[test_indices]
+                        t_train, t_test = t[train_indices], t[test_indices]
 
-                    # Initialize and train the classifier
-                    test_model = RandomForestClassifier(n_estimators=10, random_state=42)
-                    test_model.fit(X_train, t_train)
+                        # Initialize and train the classifier
+                        test_model = LogisticRegression(max_iter=10000)
+                        test_model.fit(X_train, t_train)
 
-                    # Evaluate the model on the test set
-                    score = test_model.score(X_test, t_test)
-                    if score > best_score:
-                        best_score = score
-                        best_combo = (num_subset, text_subset, bayes_subset, category_subset)
-                        print("New best score:", best_score, "with combo:", best_combo)
-                    if c % 10 == 0:
-                        print("Iteration:", c)
-                    c += 1
-
-    X_train, X_test = X[train_indices], X[test_indices]
-    t_train, t_test = t[train_indices], t[test_indices]
+                        # Evaluate the model on the test set
+                        score = test_model.score(X_test, t_test)
+                        if score > best_score:
+                            best_score = score
+                            best_combo = (num_subset, text_subset, bayes_subset, category_subset)
+                            print("New best score:", best_score, "with combo:", best_combo)
+                            writer.writerow([c, score, num_subset, text_subset, bayes_subset, category_subset])
+                            csvfile.flush()
+                        if c % 10 == 0:
+                            print("Iteration:", c)
+                        c += 1
     print("Best CV accuracy:", best_score)
-    print("Best feature combination:")
+    print("Best feature combination: num_subset, text_subset, bayes_subset, category_subset")
     for i in best_combo: print(i)
-
     print("Training feature matrix shape:", X_train.shape)
     print("Testing feature matrix shape:", X_test.shape)
     print("Training label matrix shape:", t_train.shape)
     print("Testing label matrix shape:", t_test.shape)
 
-    X_train, X_test = X[train_indices], X[test_indices]
-    t_train, t_test = t[train_indices], t[test_indices]
-
-    # Initialize the logistic regression model
-    test_model = LogisticRegression(max_iter=10000)
-
-    # Train the model on the training data
-    test_model.fit(X_train, t_train)
-
-    # Predict on the test set
-    y_pred = test_model.predict(X_test)
-
-    # Evaluate the model's accuracy
-    accuracy = accuracy_score(t_test, y_pred)
-    print("LR Test Accuracy:", accuracy)
-    print("LR Training Accuracy:", test_model.score(X_train, t_train))
-
-    test_model = RandomForestClassifier(n_estimators=10, random_state=42)
-
-    # Train the model on the training data
-    test_model.fit(X_train, t_train)
-
-    # Predict on the test set
-    y_pred = test_model.predict(X_test)
-
-    # Evaluate the model's accuracy
-    accuracy = accuracy_score(t_test, y_pred)
-    print("RF Test Accuracy:", accuracy)
-    print("RF Training Accuracy:", test_model.score(X_train, t_train))
 
 
-    # Train model on complete dataset
-    final_model = LogisticRegression(max_iter=10000)
-    final_model.fit(X, t)
-
-
-
-    # Save weights in weights.txt
-    np.savetxt("weights.txt", final_model.coef_, fmt="%.7f")  # Saves with 7 decimal places
-    np.savetxt("bias.txt", final_model.intercept_, fmt="%.7f")
