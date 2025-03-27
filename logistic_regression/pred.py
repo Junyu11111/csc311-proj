@@ -7,7 +7,7 @@ import re
 weights = np.loadtxt("weights.txt")  # Load as a flat array
 
 # Reshape into (3, 1380) matrix
-W = weights.reshape(3, 1380)  # Assuming row-major order
+W = weights.reshape(3, 1395)  # Assuming row-major order
 
 # Load bias from the file
 b = np.loadtxt("bias.txt")
@@ -17,6 +17,18 @@ vocab_movie = ['007', '1', '10', '1001', '11', '13', '1953', '2', '2001', '2002'
 vocab_drink = ['2', '7up', 'a', 'about', 'actually', 'after', 'alcohol', 'alcoholic', 'ale', 'all', 'also', 'although', 'am', 'an', 'and', 'any', 'apple', 'are', 'as', 'at', 'authentic', 'avengers', 'ayran', 'baijiu', 'baja', 'barbican', 'barley', 'be', 'because', 'beer', 'before', 'best', 'beverage', 'blast', 'boba', 'bottled', 'bring', 'brisk', 'bubble', 'buffets', 'but', 'by', 'calpis', 'can', 'canada', 'cancel', 'cancels', 'canned', 'canonically', 'carbonated', 'case', 'catbonated', 'champagne', 'cheese', 'chocolate', 'choice', 'choose', 'citrusy', 'classic', 'coca', 'cocacola', 'cocktail', 'cococola', 'coffee', 'coke', 'cola', 'cold', 'combo', 'course', 'crazy', 'crush', 'culture', 'cups', 'd', 'dairy', 'dehydrating', 'dew', 'diet', 'digest', 'dip', 'does', 'don', 'down', 'dr', 'drink', 'drinks', 'dry', 'e', 'eat', 'eaten', 'enough', 'especially', 'etc', 'events', 'ever', 'example', 'expect', 'experienced', 'fan', 'fanta', 'fat', 'favourite', 'fish', 'fizzy', 'flames', 'flavor', 'flavour', 'food', 'for', 'fountain', 'frequent', 'from', 'fruit', 'g', 'gallon', 'gatorade', 'general', 'gets', 'gin', 'ginger', 'gingerale', 'glass', 'go', 'good', 'green', 'had', 'hard', 'has', 'have', 'having', 'healthy', 'helps', 'honestly', 'hot', 'how', 'i', 'ice', 'iced', 'idea', 'ideally', 'if', 'ill', 'in', 'is', 'it', 'item', 'its', 'japanese', 'jarritos', 'jasmine', 'juice', 'junk', 'just', 'kind', 'kombucha', 'korea', 'kraken', 'laban', 'lassi', 'leban', 'lemon', 'lemonade', 'like', 'literally', 'lot', 'love', 'make', 'mango', 'martini', 'matcha', 'maybe', 'me', 'meal', 'milk', 'milkshake', 'mine', 'mineral', 'mint', 'mirinda', 'miso', 'misso', 'mmmm', 'mmmmm', 'more', 'most', 'mountain', 'much', 'my', 'need', 'nestea', 'never', 'next', 'nihonshu', 'no', 'non', 'none', 'not', 'nothing', 'obviously', 'ocha', 'of', 'often', 'on', 'one', 'only', 'oolong', 'optional', 'or', 'orange', 'other', 'out', 'over', 'pair', 'pairing', 'particular', 'peach', 'pellegrino', 'pepper', 'pepsi', 'perhaps', 'personally', 'pineapple', 'pizza', 'pizzas', 'pop', 'pops', 'powerade', 'preferred', 'probably', 'pulp', 'punch', 'purchased', 'put', 'ramune', 're', 'reason', 'red', 'regular', 'related', 'reserve', 'restaurants', 'rice', 'roasted', 'root', 'rootbeer', 'rum', 's', 'sake', 'salty', 'san', 'saporo', 'sauce', 'say', 'school', 'separate', 'series', 'serve', 'served', 'shawarma', 'simply', 'since', 'sit', 'smoothie', 'so', 'soda', 'soft', 'soju', 'some', 'something', 'sort', 'sorts', 'soup', 'soy', 'soybean', 'sparking', 'sparkling', 'specific', 'specifically', 'spiced', 'spiciness', 'spicy', 'sprindrift', 'sprite', 'stereotypically', 'straight', 'stuff', 'such', 'sugar', 'sugarcane', 'suju', 'sure', 'sushi', 'sweet', 't', 'take', 'talking', 'tap', 'taste', 'tea', 'team', 'than', 'that', 'the', 'their', 'then', 'there', 'they', 'think', 'this', 'times', 'to', 'too', 'top', 'traditional', 'tried', 'twice', 'type', 'umami', 'uncarbonated', 'up', 'usually', 'very', 'want', 'was', 'wasabi', 'water', 'we', 'weeks', 'well', 'western', 'what', 'when', 'will', 'wine', 'wines', 'with', 'works', 'would', 'wouldn', 'yakult', 'yogurt', 'you', 'yuzu', 'zero']
 vocab_reminder = ['friends', 'parents', 'siblings', 'strangers', 'teachers']
 vocab_hotsauce = ['a', 'amount', 'food', 'have', 'hot', 'i', 'item', 'little', 'lot', 'medium', 'mild', 'moderate', 'my', 'of', 'sauce', 'some', 'this', 'will', 'with']
+
+pi = np.loadtxt("pi.txt")
+theta_setting = np.loadtxt("theta_Q3.txt")
+theta_setting = theta_setting.reshape(11, 3)
+theta_movie = np.loadtxt("theta_Q5.txt")
+theta_movie = theta_movie.reshape(998, 3)
+theta_drink = np.loadtxt("theta_Q6.txt")
+theta_drink = theta_drink.reshape(344, 3)
+theta_reminder = np.loadtxt("theta_Q7.txt")
+theta_reminder = theta_reminder.reshape(5, 3)
+theta_hotsauce = np.loadtxt("theta_Q8.txt")
+theta_hotsauce = theta_hotsauce.reshape(19, 3)
 
 # Define column names (assumes these exact names exist in the CSV)
 cols = {
@@ -31,6 +43,20 @@ cols = {
     "hotsauce": "Q8: How much hot sauce would you add to this food item?"
 }
 
+vocab = {
+    cols["setting"]: vocab_setting,
+    cols["movie"]: vocab_movie,
+    cols["drink"]: vocab_drink,
+    cols["reminder"]: vocab_reminder,
+    cols["hotsauce"]: vocab_hotsauce
+}
+theta = {
+    cols["setting"]: theta_setting,
+    cols["movie"]: theta_movie,
+    cols["drink"]: theta_drink,
+    cols["reminder"]: theta_reminder,
+    cols["hotsauce"]: theta_hotsauce
+}
 # Define the mapping from indices to class names
 class_mapping = {0: "Pizza", 1: "Shawarma", 2: "Sushi"}
 
@@ -92,57 +118,58 @@ def create_text_features(df: pd.DataFrame, column: str, vocab: List[str]) -> np.
     return X_bin
 
 
-def create_X(filename: str) -> np.ndarray:
-    """
-    Creates feature matrix X from the CSV file.
+def create_bayes_features(df: pd.DataFrame, column: str) -> np.ndarray:
+    X = create_text_features(df, column, vocab[column])
+    return compute_nb_probabilities(X, pi, theta[column])
 
-    The function processes several columns:
-      - Converts specific columns to numerical features using extract_number.
-      - Converts text columns into binary indicator matrices.
+def compute_nb_probabilities(X, pi, theta):
+    """
+    Compute predicted class probabilities using the Naive Bayes model.
 
     Parameters:
-        filename (str): Path to the CSV file.
+        X: Binary feature matrix [N, V]
+        pi: Class prior probabilities [K]
+        theta: Feature likelihoods [V, K]
 
     Returns:
-        np.ndarray: Feature matrix X
+        probs: Array of predicted probabilities [N, K]
     """
+    # Use log probabilities for numerical stability.
+    log_probs = np.dot(X, np.log(theta)) + np.dot(1 - X, np.log(1 - theta)) + np.log(pi)
+    # Convert log probabilities back to probabilities using softmax
+    probs = np.exp(log_probs - np.max(log_probs, axis=1, keepdims=True))
+    probs = probs / np.sum(probs, axis=1, keepdims=True)
+    return probs
+
+
+
+
+def create_X_selection(filename) -> np.ndarray:
     df = pd.read_csv(filename)
-
-    # Define column names (assumes these exact names exist in the CSV)
-
     N = len(df)
+    X_parts = []  # Collect all features here
+    num_cols = [cols["complexity"], cols["ingredients"], cols["price"]]
+    text_cols = [cols["setting"], cols["movie"], cols["drink"], cols["reminder"], cols["hotsauce"]]
+    bayes_cols = [cols["setting"], cols["movie"], cols["drink"], cols["reminder"], cols["hotsauce"]]
+    # Process numeric columns
+    for col in num_cols:
+        num_features = df[col].apply(extract_number).to_numpy().reshape(N, 1)
+        X_parts.append(num_features)
 
-    # Process first two numerical columns (complexity and ingredients)
-    complexity = df[cols["complexity"]].fillna(0).to_numpy().reshape(N, 1)
-    ingredients = df[cols["ingredients"]].apply(extract_number).to_numpy().reshape(N, 1)
-    X = np.hstack((complexity, ingredients))
+    # Process text columns
+    for col in text_cols:
+        text_features = create_text_features(df, col, vocab[col])
+        X_parts.append(text_features)
 
-    # Process 'setting' text column into binary features
-    setting_features = create_text_features(df, cols["setting"], vocab_setting)
-    X = np.hstack((X, setting_features))
+    # Process Bayesian columns
+    for col in bayes_cols:
+        bayes_features = create_bayes_features(df, col)
+        X_parts.append(bayes_features)
 
-    # Process price column (numerical extraction)
-    price = df[cols["price"]].apply(extract_number).to_numpy().reshape(N, 1)
-    X = np.hstack((X, price))
-
-    # Process 'movie' text column into binary features
-    movie_features = create_text_features(df, cols["movie"], vocab_movie)
-    X = np.hstack((X, movie_features))
-
-    # Process 'drink' text column into binary features
-    drink_features = create_text_features(df, cols["drink"], vocab_drink)
-    X = np.hstack((X, drink_features))
-
-    # Process 'reminder' text column into binary features
-    reminder_features = create_text_features(df, cols["reminder"], vocab_reminder)
-    X = np.hstack((X, reminder_features))
-
-    # Process 'hotsauce' text column into binary features
-    hotsauce_features = create_text_features(df, cols["hotsauce"], vocab_hotsauce)
-    X = np.hstack((X, hotsauce_features))
+    # Concatenate all features horizontally
+    X = np.hstack(X_parts)
 
     return X
-
 
 def softmax(z):
     """Compute softmax probabilities for multi-class classification."""
@@ -154,7 +181,7 @@ def predict_all(filename):
     """
     Make predictions for the data in filename
     """
-    X = create_X(filename)
+    X = create_X_selection(filename)
 
     logits = X @ W.T + b  # Compute raw scores (logits)
     probs = softmax(logits)  # Convert to probabilities
