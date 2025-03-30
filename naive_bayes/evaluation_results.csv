@@ -1,0 +1,97 @@
+model_name,best_params,best_cv_score,test_score,feature,feature_type
+Naive Bayes,"OrderedDict([('alpha', 0.11233621690895233)])",0.3452471482889734,0.2857142857142857,"Q1: From a scale 1 to 5, how complex is it to make this food? (Where 1 is the most simple, and 5 is the most complex)",numerical
+Logistic Regression,"OrderedDict([('C', 0.7425534359037014)])",0.4479087452471483,0.42857142857142855,"Q1: From a scale 1 to 5, how complex is it to make this food? (Where 1 is the most simple, and 5 is the most complex)",numerical
+Random Forest,"OrderedDict([('max_depth', 42), ('min_samples_split', 8), ('n_estimators', 563)])",0.47072243346007603,0.47112462006079026,"Q1: From a scale 1 to 5, how complex is it to make this food? (Where 1 is the most simple, and 5 is the most complex)",numerical
+KNN,"OrderedDict([('n_neighbors', 25), ('p', 2), ('weights', 'uniform')])",0.4357414448669202,0.42249240121580545,"Q1: From a scale 1 to 5, how complex is it to make this food? (Where 1 is the most simple, and 5 is the most complex)",numerical
+Naive Bayes,"OrderedDict([('alpha', 0.11233621690895233)])",0.3452471482889734,0.2857142857142857,Q2: How many ingredients would you expect this food item to contain?,numerical
+Logistic Regression,"OrderedDict([('C', 0.7425534359037014)])",0.48973384030418243,0.45592705167173253,Q2: How many ingredients would you expect this food item to contain?,numerical
+Random Forest,"OrderedDict([('max_depth', 46), ('min_samples_split', 9), ('n_estimators', 108)])",0.4692015209125476,0.47112462006079026,Q2: How many ingredients would you expect this food item to contain?,numerical
+KNN,"OrderedDict([('n_neighbors', 25), ('p', 2), ('weights', 'uniform')])",0.4737642585551331,0.45592705167173253,Q2: How many ingredients would you expect this food item to contain?,numerical
+Naive Bayes,"OrderedDict([('alpha', 0.11233621690895233)])",0.3452471482889734,0.2857142857142857,Q3: In what setting would you expect this food to be served? Please check all that apply,numerical
+Logistic Regression,"OrderedDict([('C', 0.7425534359037014)])",0.3452471482889734,0.2857142857142857,Q3: In what setting would you expect this food to be served? Please check all that apply,numerical
+Random Forest,"OrderedDict([('max_depth', 42), ('min_samples_split', 8), ('n_estimators', 563)])",0.3452471482889734,0.2857142857142857,Q3: In what setting would you expect this food to be served? Please check all that apply,numerical
+KNN,"OrderedDict([('n_neighbors', 13), ('p', 2), ('weights', 'distance')])",0.3391634980988593,0.2857142857142857,Q3: In what setting would you expect this food to be served? Please check all that apply,numerical
+Naive Bayes,"OrderedDict([('alpha', 0.11233621690895233)])",0.3452471482889734,0.2857142857142857,Q4: How much would you expect to pay for one serving of this food item?,numerical
+Logistic Regression,"OrderedDict([('C', 0.7425534359037014)])",0.4494296577946768,0.4072948328267477,Q4: How much would you expect to pay for one serving of this food item?,numerical
+Random Forest,"OrderedDict([('max_depth', 80), ('min_samples_split', 6), ('n_estimators', 340)])",0.5794676806083651,0.6048632218844985,Q4: How much would you expect to pay for one serving of this food item?,numerical
+KNN,"OrderedDict([('n_neighbors', 14), ('p', 2), ('weights', 'uniform')])",0.5794676806083651,0.6048632218844985,Q4: How much would you expect to pay for one serving of this food item?,numerical
+Naive Bayes,"OrderedDict([('alpha', 0.11233621690895233)])",0.3452471482889734,0.2857142857142857,Q5: What movie do you think of when thinking of this food item?,numerical
+Logistic Regression,"OrderedDict([('C', 0.7425534359037014)])",0.34980988593155893,0.2826747720364742,Q5: What movie do you think of when thinking of this food item?,numerical
+Random Forest,"OrderedDict([('max_depth', 42), ('min_samples_split', 8), ('n_estimators', 563)])",0.36501901140684406,0.2948328267477204,Q5: What movie do you think of when thinking of this food item?,numerical
+KNN,"OrderedDict([('n_neighbors', 13), ('p', 2), ('weights', 'distance')])",0.35665399239543727,0.3981762917933131,Q5: What movie do you think of when thinking of this food item?,numerical
+Naive Bayes,"OrderedDict([('alpha', 0.11233621690895233)])",0.3452471482889734,0.2857142857142857,Q6: What drink would you pair with this food item?,numerical
+Logistic Regression,"OrderedDict([('C', 0.7425534359037014)])",0.3315589353612167,0.2826747720364742,Q6: What drink would you pair with this food item?,numerical
+Random Forest,"OrderedDict([('max_depth', 82), ('min_samples_split', 3), ('n_estimators', 379)])",0.3505703422053232,0.3221884498480243,Q6: What drink would you pair with this food item?,numerical
+KNN,"OrderedDict([('n_neighbors', 13), ('p', 2), ('weights', 'distance')])",0.3307984790874524,0.3890577507598784,Q6: What drink would you pair with this food item?,numerical
+Naive Bayes,"OrderedDict([('alpha', 0.11233621690895233)])",0.3452471482889734,0.2857142857142857,"Q7: When you think about this food item, who does it remind you of?",numerical
+Logistic Regression,"OrderedDict([('C', 0.7425534359037014)])",0.3513307984790875,0.3069908814589666,"Q7: When you think about this food item, who does it remind you of?",numerical
+Random Forest,"OrderedDict([('max_depth', 84), ('min_samples_split', 9), ('n_estimators', 217)])",0.39695817490494295,0.40425531914893614,"Q7: When you think about this food item, who does it remind you of?",numerical
+KNN,"OrderedDict([('n_neighbors', 13), ('p', 2), ('weights', 'distance')])",0.3650190114068441,0.4072948328267477,"Q7: When you think about this food item, who does it remind you of?",numerical
+Naive Bayes,"OrderedDict([('alpha', 0.11233621690895233)])",0.3452471482889734,0.2857142857142857,Q8: How much hot sauce would you add to this food item?,numerical
+Logistic Regression,"OrderedDict([('C', 0.7425534359037014)])",0.3452471482889734,0.2857142857142857,Q8: How much hot sauce would you add to this food item?,numerical
+Random Forest,"OrderedDict([('max_depth', 42), ('min_samples_split', 8), ('n_estimators', 563)])",0.3452471482889734,0.2857142857142857,Q8: How much hot sauce would you add to this food item?,numerical
+KNN,"OrderedDict([('n_neighbors', 13), ('p', 2), ('weights', 'distance')])",0.3391634980988593,0.2857142857142857,Q8: How much hot sauce would you add to this food item?,numerical
+Naive Bayes,"OrderedDict([('alpha', 0.11233621690895233)])",0.47072243346007603,0.47112462006079026,"Q1: From a scale 1 to 5, how complex is it to make this food? (Where 1 is the most simple, and 5 is the most complex)",category
+Logistic Regression,"OrderedDict([('C', 0.7425534359037014)])",0.47072243346007603,0.47112462006079026,"Q1: From a scale 1 to 5, how complex is it to make this food? (Where 1 is the most simple, and 5 is the most complex)",category
+Random Forest,"OrderedDict([('max_depth', 42), ('min_samples_split', 8), ('n_estimators', 563)])",0.47072243346007603,0.47112462006079026,"Q1: From a scale 1 to 5, how complex is it to make this food? (Where 1 is the most simple, and 5 is the most complex)",category
+KNN,"OrderedDict([('n_neighbors', 24), ('p', 1), ('weights', 'distance')])",0.4365019011406844,0.47112462006079026,"Q1: From a scale 1 to 5, how complex is it to make this food? (Where 1 is the most simple, and 5 is the most complex)",category
+Naive Bayes,"OrderedDict([('alpha', 0.11233621690895233)])",0.5019011406844107,0.48936170212765956,Q2: How many ingredients would you expect this food item to contain?,category
+Logistic Regression,"OrderedDict([('C', 0.7425534359037014)])",0.5117870722433461,0.49240121580547114,Q2: How many ingredients would you expect this food item to contain?,category
+Random Forest,"OrderedDict([('max_depth', 84), ('min_samples_split', 9), ('n_estimators', 217)])",0.5110266159695817,0.48936170212765956,Q2: How many ingredients would you expect this food item to contain?,category
+KNN,"OrderedDict([('n_neighbors', 25), ('p', 1), ('weights', 'distance')])",0.45171102661596957,0.48936170212765956,Q2: How many ingredients would you expect this food item to contain?,category
+Naive Bayes,"OrderedDict([('alpha', 15.37948446580078)])",0.650190114068441,0.662613981762918,Q3: In what setting would you expect this food to be served? Please check all that apply,category
+Logistic Regression,"OrderedDict([('C', 0.7425534359037014)])",0.6692015209125476,0.7173252279635258,Q3: In what setting would you expect this food to be served? Please check all that apply,category
+Random Forest,"OrderedDict([('max_depth', 42), ('min_samples_split', 8), ('n_estimators', 563)])",0.6813688212927757,0.7112462006079028,Q3: In what setting would you expect this food to be served? Please check all that apply,category
+KNN,"OrderedDict([('n_neighbors', 25), ('p', 1), ('weights', 'distance')])",0.6790874524714829,0.7112462006079028,Q3: In what setting would you expect this food to be served? Please check all that apply,category
+Naive Bayes,"OrderedDict([('alpha', 15.37948446580078)])",0.5193916349809886,0.47720364741641336,Q4: How much would you expect to pay for one serving of this food item?,category
+Logistic Regression,"OrderedDict([('C', 727.3082081096716)])",0.5224334600760456,0.48936170212765956,Q4: How much would you expect to pay for one serving of this food item?,category
+Random Forest,"OrderedDict([('max_depth', 84), ('min_samples_split', 9), ('n_estimators', 217)])",0.5140684410646388,0.48936170212765956,Q4: How much would you expect to pay for one serving of this food item?,category
+KNN,"OrderedDict([('n_neighbors', 25), ('p', 1), ('weights', 'distance')])",0.5193916349809886,0.5106382978723404,Q4: How much would you expect to pay for one serving of this food item?,category
+Naive Bayes,"OrderedDict([('alpha', 11.533999859559563)])",0.6319391634980989,0.6109422492401215,Q5: What movie do you think of when thinking of this food item?,category
+Logistic Regression,"OrderedDict([('C', 0.7425534359037014)])",0.626615969581749,0.6443768996960486,Q5: What movie do you think of when thinking of this food item?,category
+Random Forest,"OrderedDict([('max_depth', 82), ('min_samples_split', 3), ('n_estimators', 379)])",0.6235741444866919,0.6352583586626139,Q5: What movie do you think of when thinking of this food item?,category
+KNN,"OrderedDict([('n_neighbors', 13), ('p', 2), ('weights', 'distance')])",0.6159695817490495,0.6474164133738601,Q5: What movie do you think of when thinking of this food item?,category
+Naive Bayes,"OrderedDict([('alpha', 15.37948446580078)])",0.5711026615969581,0.5349544072948328,Q6: What drink would you pair with this food item?,category
+Logistic Regression,"OrderedDict([('C', 1.2996535162010368)])",0.55893536121673,0.541033434650456,Q6: What drink would you pair with this food item?,category
+Random Forest,"OrderedDict([('max_depth', 42), ('min_samples_split', 8), ('n_estimators', 563)])",0.5703422053231939,0.5015197568389058,Q6: What drink would you pair with this food item?,category
+KNN,"OrderedDict([('n_neighbors', 24), ('p', 1), ('weights', 'distance')])",0.5604562737642586,0.5227963525835866,Q6: What drink would you pair with this food item?,category
+Naive Bayes,"OrderedDict([('alpha', 0.11233621690895233)])",0.5330798479087453,0.46808510638297873,"Q7: When you think about this food item, who does it remind you of?",category
+Logistic Regression,"OrderedDict([('C', 0.7425534359037014)])",0.5338403041825095,0.46200607902735563,"Q7: When you think about this food item, who does it remind you of?",category
+Random Forest,"OrderedDict([('max_depth', 80), ('min_samples_split', 6), ('n_estimators', 340)])",0.5315589353612167,0.44680851063829785,"Q7: When you think about this food item, who does it remind you of?",category
+KNN,"OrderedDict([('n_neighbors', 24), ('p', 1), ('weights', 'distance')])",0.5072243346007604,0.47720364741641336,"Q7: When you think about this food item, who does it remind you of?",category
+Naive Bayes,"OrderedDict([('alpha', 0.11233621690895233)])",0.45627376425855515,0.47720364741641336,Q8: How much hot sauce would you add to this food item?,category
+Logistic Regression,"OrderedDict([('C', 0.7425534359037014)])",0.5239543726235741,0.547112462006079,Q8: How much hot sauce would you add to this food item?,category
+Random Forest,"OrderedDict([('max_depth', 42), ('min_samples_split', 8), ('n_estimators', 563)])",0.5239543726235742,0.547112462006079,Q8: How much hot sauce would you add to this food item?,category
+KNN,"OrderedDict([('n_neighbors', 24), ('p', 1), ('weights', 'distance')])",0.5231939163498099,0.547112462006079,Q8: How much hot sauce would you add to this food item?,category
+Naive Bayes,"OrderedDict([('alpha', 0.11233621690895233)])",0.47072243346007603,0.47112462006079026,"Q1: From a scale 1 to 5, how complex is it to make this food? (Where 1 is the most simple, and 5 is the most complex)",text
+Logistic Regression,"OrderedDict([('C', 0.7425534359037014)])",0.47072243346007603,0.47112462006079026,"Q1: From a scale 1 to 5, how complex is it to make this food? (Where 1 is the most simple, and 5 is the most complex)",text
+Random Forest,"OrderedDict([('max_depth', 42), ('min_samples_split', 8), ('n_estimators', 563)])",0.47072243346007603,0.47112462006079026,"Q1: From a scale 1 to 5, how complex is it to make this food? (Where 1 is the most simple, and 5 is the most complex)",text
+KNN,"OrderedDict([('n_neighbors', 24), ('p', 1), ('weights', 'distance')])",0.4403041825095057,0.42249240121580545,"Q1: From a scale 1 to 5, how complex is it to make this food? (Where 1 is the most simple, and 5 is the most complex)",text
+Naive Bayes,"OrderedDict([('alpha', 0.11233621690895233)])",0.5543726235741444,0.5683890577507599,Q2: How many ingredients would you expect this food item to contain?,text
+Logistic Regression,"OrderedDict([('C', 1.2996535162010368)])",0.5680608365019012,0.5623100303951368,Q2: How many ingredients would you expect this food item to contain?,text
+Random Forest,"OrderedDict([('max_depth', 46), ('min_samples_split', 9), ('n_estimators', 108)])",0.5596958174904942,0.5562310030395137,Q2: How many ingredients would you expect this food item to contain?,text
+KNN,"OrderedDict([('n_neighbors', 24), ('p', 1), ('weights', 'distance')])",0.48517110266159696,0.47112462006079026,Q2: How many ingredients would you expect this food item to contain?,text
+Naive Bayes,"OrderedDict([('alpha', 15.37948446580078)])",0.634980988593156,0.6200607902735562,Q3: In what setting would you expect this food to be served? Please check all that apply,text
+Logistic Regression,"OrderedDict([('C', 727.3082081096716)])",0.6600760456273764,0.6930091185410334,Q3: In what setting would you expect this food to be served? Please check all that apply,text
+Random Forest,"OrderedDict([('max_depth', 42), ('min_samples_split', 8), ('n_estimators', 563)])",0.6577946768060837,0.668693009118541,Q3: In what setting would you expect this food to be served? Please check all that apply,text
+KNN,"OrderedDict([('n_neighbors', 25), ('p', 1), ('weights', 'distance')])",0.6615969581749049,0.6838905775075987,Q3: In what setting would you expect this food to be served? Please check all that apply,text
+Naive Bayes,"OrderedDict([('alpha', 0.1675569944093659)])",0.6091254752851711,0.6139817629179332,Q4: How much would you expect to pay for one serving of this food item?,text
+Logistic Regression,"OrderedDict([('C', 1.2996535162010368)])",0.6152091254752852,0.6322188449848024,Q4: How much would you expect to pay for one serving of this food item?,text
+Random Forest,"OrderedDict([('max_depth', 42), ('min_samples_split', 8), ('n_estimators', 563)])",0.6045627376425855,0.6048632218844985,Q4: How much would you expect to pay for one serving of this food item?,text
+KNN,"OrderedDict([('n_neighbors', 25), ('p', 2), ('weights', 'uniform')])",0.5718631178707224,0.5501519756838906,Q4: How much would you expect to pay for one serving of this food item?,text
+Naive Bayes,"OrderedDict([('alpha', 0.11233621690895233)])",0.7300380228136882,0.7781155015197568,Q5: What movie do you think of when thinking of this food item?,text
+Logistic Regression,"OrderedDict([('C', 727.3082081096716)])",0.7330798479087453,0.7598784194528876,Q5: What movie do you think of when thinking of this food item?,text
+Random Forest,"OrderedDict([('max_depth', 84), ('min_samples_split', 9), ('n_estimators', 217)])",0.7224334600760456,0.7325227963525835,Q5: What movie do you think of when thinking of this food item?,text
+KNN,"OrderedDict([('n_neighbors', 25), ('p', 1), ('weights', 'distance')])",0.7110266159695817,0.7325227963525835,Q5: What movie do you think of when thinking of this food item?,text
+Naive Bayes,"OrderedDict([('alpha', 0.11233621690895233)])",0.6418250950570343,0.5683890577507599,Q6: What drink would you pair with this food item?,text
+Logistic Regression,"OrderedDict([('C', 486.15182285249807)])",0.6433460076045627,0.5805471124620061,Q6: What drink would you pair with this food item?,text
+Random Forest,"OrderedDict([('max_depth', 82), ('min_samples_split', 3), ('n_estimators', 379)])",0.6357414448669202,0.5501519756838906,Q6: What drink would you pair with this food item?,text
+KNN,"OrderedDict([('n_neighbors', 25), ('p', 2), ('weights', 'uniform')])",0.6365019011406844,0.5714285714285714,Q6: What drink would you pair with this food item?,text
+Naive Bayes,"OrderedDict([('alpha', 0.11233621690895233)])",0.5330798479087453,0.46808510638297873,"Q7: When you think about this food item, who does it remind you of?",text
+Logistic Regression,"OrderedDict([('C', 0.7425534359037014)])",0.5338403041825095,0.46200607902735563,"Q7: When you think about this food item, who does it remind you of?",text
+Random Forest,"OrderedDict([('max_depth', 46), ('min_samples_split', 9), ('n_estimators', 108)])",0.5300380228136882,0.44680851063829785,"Q7: When you think about this food item, who does it remind you of?",text
+KNN,"OrderedDict([('n_neighbors', 24), ('p', 1), ('weights', 'distance')])",0.5110266159695818,0.45288753799392095,"Q7: When you think about this food item, who does it remind you of?",text
+Naive Bayes,"OrderedDict([('alpha', 0.11233621690895233)])",0.45627376425855515,0.47720364741641336,Q8: How much hot sauce would you add to this food item?,text
+Logistic Regression,"OrderedDict([('C', 727.3082081096716)])",0.5239543726235742,0.547112462006079,Q8: How much hot sauce would you add to this food item?,text
+Random Forest,"OrderedDict([('max_depth', 42), ('min_samples_split', 8), ('n_estimators', 563)])",0.5239543726235742,0.547112462006079,Q8: How much hot sauce would you add to this food item?,text
+KNN,"OrderedDict([('n_neighbors', 25), ('p', 2), ('weights', 'uniform')])",0.48060836501901144,0.547112462006079,Q8: How much hot sauce would you add to this food item?,text
