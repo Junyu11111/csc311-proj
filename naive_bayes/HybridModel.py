@@ -153,7 +153,6 @@ class HybridModel(HybridModelPredictor):
                     estimator=lr,
                     search_spaces={
                         'C': (0.01, 100.0, 'log-uniform'),
-                        'penalty': ['l2', 'l1']
                     },
                     n_iter=10,
                     cv=3,
@@ -165,7 +164,6 @@ class HybridModel(HybridModelPredictor):
 
                 best_lr = LogisticRegression(
                     C=best_params['C'],
-                    penalty=best_params['penalty'],
                     max_iter=10000,
                     random_state=self.random_state
                 )
@@ -387,14 +385,14 @@ class NBParameterEstimator(BaseEstimator):
 
 if __name__ == "__main__":
     num_cols = [
-        "Q1: From a scale 1 to 5, how complex is it to make this food? (Where 1 is the most simple, and 5 is the most complex)",
-        "Q2: How many ingredients would you expect this food item to contain?",
-        "Q3: In what setting would you expect this food to be served? Please check all that apply",
-        "Q4: How much would you expect to pay for one serving of this food item?",
-        "Q5: What movie do you think of when thinking of this food item?",
-        "Q6: What drink would you pair with this food item?",
-        "Q7: When you think about this food item, who does it remind you of?",
-        "Q8: How much hot sauce would you add to this food item?"
+        # "Q1: From a scale 1 to 5, how complex is it to make this food? (Where 1 is the most simple, and 5 is the most complex)",
+        # "Q2: How many ingredients would you expect this food item to contain?",
+        # "Q3: In what setting would you expect this food to be served? Please check all that apply",
+        # "Q4: How much would you expect to pay for one serving of this food item?",
+        # "Q5: What movie do you think of when thinking of this food item?",
+        # "Q6: What drink would you pair with this food item?",
+        # "Q7: When you think about this food item, who does it remind you of?",
+        # "Q8: How much hot sauce would you add to this food item?"
     ]
     cate_cols = [
         "Q1: From a scale 1 to 5, how complex is it to make this food? (Where 1 is the most simple, and 5 is the most complex)",
