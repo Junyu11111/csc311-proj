@@ -1,10 +1,12 @@
+"""A hybrid model classifier with limited import."""
+
+
 import pickle
 import re
 from pathlib import Path
 from typing import List
 import numpy as np
 import pandas as pd
-
 
 
 class HybridModelPredictor:
