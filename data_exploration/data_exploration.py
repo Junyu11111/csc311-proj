@@ -78,6 +78,7 @@ def plot_numeric_features_vs_label(df):
 if __name__ == "__main__":
     file_name = "cleaned_data_combined_modified.csv"
     df = pd.read_csv(file_name)
+    plot_complexity_distribution(df)
     plot_ingredients_distribution(df)
     plot_price_distribution(df)
     plot_numeric_features_vs_label(df)
