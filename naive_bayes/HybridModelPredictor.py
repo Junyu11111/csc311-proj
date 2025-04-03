@@ -15,21 +15,20 @@ class HybridModelPredictor:
     No training is performed.
     All trained parameters should be loaded from a pickle file.
     """
-    def __init__(self, num_cols, cate_cols, text_cols, prob_cols, last_model):
+    def __init__(self, num_cols, cate_cols, text_cols, prob_cols):
         self.num_cols = num_cols
         self.cate_cols = cate_cols
         self.text_cols = text_cols
-        self.prob_cols = prob_cols
+        self.prob_dict = prob_cols
         self.label_mapping = None
 
         self.model_params = {
             "num_cols": {},
-            "bayes_cols": {},
+            "cate_cols": {},
             "text_cols": {},
             "label_mapping": {},
             "logreg": {}
         }
-        self.last_model = last_model
 
     @staticmethod
     def extract_vocab(series):
@@ -182,22 +181,23 @@ class HybridModelPredictor:
 
 
         for col in self.text_cols:
-            vocab = self.model_params["bayes_cols"][col]["vocab"]
+            vocab = self.model_params["text_cols"][col]["vocab"]
             X_bin = self.text_to_binary_matrix(df[col], vocab)
-            if col in self.prob_cols:
-                pi = np.array(self.model_params["bayes_cols"][col]["pi"])
-                theta = np.array(self.model_params["bayes_cols"][col]["theta"])
-                X_bin = self.compute_nb_probabilities(X_bin, pi, theta)
             X_parts.append(X_bin)
+            if "text" in self.prob_dict[col]:
+                pi = np.array(self.model_params["text_cols"][col]["pi"])
+                theta = np.array(self.model_params["text_cols"][col]["theta"])
+                X_parts.append(self.compute_nb_probabilities(X_bin, pi, theta))
+
 
         for col in self.cate_cols:
-            vocab = self.model_params["text_cols"][col]["vocab"]
+            vocab = self.model_params["cate_cols"][col]["vocab"]
             X_bin = self.categories_to_binary_matrix(df[col], vocab)
-            if col in self.prob_cols:
-                w = np.array(self.model_params["text_cols"][col]["w"])
-                b = np.array(self.model_params["text_cols"][col]["b"])
-                X_bin = self.compute_logistic_probabilities(X_bin, w, b)
             X_parts.append(X_bin)
+            if self.prob_dict[col] == "cate":
+                w = np.array(self.model_params["cate_cols"][col]["w"])
+                b = np.array(self.model_params["cate_cols"][col]["b"])
+                X_parts.append( self.compute_logistic_probabilities(X_bin, w, b))
         return np.hstack(X_parts)
 
 
@@ -212,7 +212,10 @@ class HybridModelPredictor:
             np.ndarray: Predicted class labels [N].
         """
         X = self.create_x(df)
-        return self.last_model.predict(X)
+        w = np.array(self.model_params["last_model"]["w"])
+        b = np.array(self.model_params["last_model"]["b"])
+        probs = self.compute_logistic_probabilities(X, w, b)
+        return np.argmax(probs, axis=1)
 
     def predict_class(self, df):
         numeric_preds = self.predict(df)
@@ -253,19 +256,13 @@ class SoftmaxModel:
 
 def pred(file_path, param_path, feature_config_path):
     df = pd.read_csv(file_path)
-    with open(param_path, 'rb') as f:
-        model_params = pickle.load(f)
     with open(feature_config_path, 'rb') as f:
         best_features = pickle.load(f)
-    W =  model_params["last_model"]["coef_"]
-    b = model_params["last_model"]["intercept_"]
-    last_model = SoftmaxModel(W, b)
     hmodel = HybridModelPredictor(
         num_cols=best_features["final_num_cols"],
         text_cols=best_features["final_text_cols"],
         cate_cols=best_features["final_cate_cols"],
         prob_cols=best_features["final_prob_cols"],
-        last_model=last_model
                                   )
     hmodel.load(param_path)
     return hmodel.predict_class(df)

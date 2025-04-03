@@ -1,4 +1,4 @@
-
+import itertools
 import pickle
 from pathlib import Path
 import numpy as np
@@ -6,7 +6,7 @@ import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 
-from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import cross_val_score, KFold
 from skopt import BayesSearchCV
 
 from naive_bayes.HybridModelPredictor import HybridModelPredictor
@@ -17,7 +17,7 @@ class HybridModel(HybridModelPredictor):
     A hybrid model class that combines numeric, text, and categorical feature processing.
     The final estimator (last_model) is typically a classifier such as Softmax.
     """
-    def __init__(self, num_cols, cate_cols, text_cols, prob_cols, label_col, last_model=LogisticRegression(max_iter=10000), random_state=42):
+    def __init__(self, num_cols, cate_cols, text_cols, prob_dict, label_col, random_state=42):
         """
         Initialize the HybridModel.
 
@@ -25,11 +25,11 @@ class HybridModel(HybridModelPredictor):
             num_cols (list[str]): Columns treated as numeric.
             cate_cols (list[str]): Columns treated as categorical.
             text_cols (list[str]): Columns treated as text.
-            prob_cols (list[str]): Columns for special "processed" transformations.
+            prob_dict (dict): Columns for special "processed" transformations.
             label_col (str): Name of the column containing labels.
             last_model (estimator): Final model estimator (default: LogisticRegression).
         """
-        super().__init__(num_cols, cate_cols, text_cols, prob_cols, last_model)
+        super().__init__(num_cols, cate_cols, text_cols, prob_dict)
         self.label_col = label_col
         self.random_state = random_state
 
@@ -55,7 +55,7 @@ class HybridModel(HybridModelPredictor):
                 t[i] = self.label_mapping[label_clean]
         return t
 
-    def train(self, df):
+    def train(self, df, tune_hyperparams: bool):
         """
         Train the hybrid model on a DataFrame of features and labels.
 
@@ -70,38 +70,67 @@ class HybridModel(HybridModelPredictor):
         """
         t = self.create_t(df)
 
-        X = self.prep_X(df)
+        X = self.prep_X(df, tune_hyperparams=tune_hyperparams)
 
-        self.last_model.fit(X, t)
-        # self.model_params["last_model"] = {}
-        # self.model_params["last_model"]['coef_'] = self.last_model.coef_
-        # self.model_params["last_model"]['intercept_'] = self.last_model.intercept_
+        params = {}
+
+        if tune_hyperparams:
+            lr = LogisticRegression(max_iter=10000, random_state=self.random_state)
+
+            optimizer = BayesSearchCV(
+                estimator=lr,
+                search_spaces={
+                    'C': (0.01, 100.0, 'log-uniform'),
+                },
+                n_iter=10,
+                cv=3,
+                scoring='accuracy',
+                random_state=self.random_state
+            )
+            optimizer.fit(X, t)
+            best_params = optimizer.best_params_
+        else:
+            best_params = self.model_params["last_model"]["hyperparams"]
+        best_lr = LogisticRegression(
+            C=best_params['C'],
+            max_iter=10000,
+            random_state=self.random_state
+        )
+        best_lr.fit(X, t)
+        params.update({
+            "w": best_lr.coef_,
+            "b": best_lr.intercept_,
+            "hyperparams": best_params
+        })
+        self.model_params["last_model"] = params
         self.model_params["label_mapping"] = self.label_mapping
-        return self.last_model, self.model_params
+        return self.model_params
 
-    def prep_X(self, df: pd.DataFrame):
-        self.prep_X_dict(df, prep_all_prob=False)
+
+    def prep_X(self, df: pd.DataFrame, tune_hyperparams=True):
+        self.prep_X_dict(df, prep_all_prob=False, tune_hyperparams=tune_hyperparams)
         X_parts = []
         columns = [f"{col}_num" for col in self.num_cols] \
                   + [f"{col}_text" for col in self.text_cols] \
                   + [f"{col}_cate" for col in self.cate_cols]
         for col in columns:
+            X_parts.append(self.X_dict[col])
             if f"{col}_prob" in self.X_dict:
+                # append converted probabilities to X
                 X_parts.append(self.X_dict[f"{col}_prob"])
-            else:
-                X_parts.append(self.X_dict[col])
         return np.hstack(X_parts)
 
 
 
 
-    def prep_X_dict(self, df: pd.DataFrame, prep_all_prob=True):
+    def prep_X_dict(self, df: pd.DataFrame, prep_all_prob=True, tune_hyperparams=True):
         """
         Precompute raw and processed representations for each column and store them in self.x_dict.
 
         Parameters:
             df (pd.DataFrame): DataFrame containing all feature columns + label_col.
         """
+
         t = self.create_t(df)
         n_labels = len(np.unique(t))
         self.X_dict = {"t":t}
@@ -121,46 +150,53 @@ class HybridModel(HybridModelPredictor):
             params = {"vocab": vocab}
             X_bin = self.text_to_binary_matrix(df[col], vocab)
             self.X_dict[col + "_text"] =  X_bin
-            if prep_all_prob or col in self.prob_cols:
-                optimizer = BayesSearchCV(
-                    estimator=NBParameterEstimator(),
-                    search_spaces={
-                        'a_feat': (0.1, 10.0, 'log-uniform'),
-                        'b_feat': (0.1, 10.0, 'log-uniform')
-                    },
-                    n_iter=10,
-                    cv=3,
-                    scoring='accuracy',
-                    random_state=self.random_state,
-                )
-                optimizer.fit(X_bin, t)
-                best_params = optimizer.best_params_
+            if prep_all_prob or "text" in self.prob_dict[col]:
+                # convert if probability convertion is specified
+                if tune_hyperparams:
+                    optimizer = BayesSearchCV(
+                        estimator=NBParameterEstimator(),
+                        search_spaces={
+                            'a_feat': (0.1, 10.0, 'log-uniform'),
+                            'b_feat': (0.1, 10.0, 'log-uniform')
+                        },
+                        n_iter=10,
+                        cv=5,
+                        scoring='accuracy',
+                        random_state=self.random_state,
+                    )
+                    optimizer.fit(X_bin, t)
+                    best_params = optimizer.best_params_
+                else:
+                    best_params = self.model_params["text_cols"][col]["hyperparams"]
                 a, b = best_params['a_feat'], best_params['b_feat']
                 pi, theta = self.naive_bayes_map(X_bin, t, n_labels=n_labels, a_feat=a, b_feat=b)
-                params.update({"pi": pi, "theta": theta, "best_params": best_params})
+                params.update({"pi": pi, "theta": theta, "hyperparams": best_params})
                 self.X_dict[col + "_text" + "_prob"] = self.compute_nb_probabilities(X_bin, pi, theta)
-            self.model_params["bayes_cols"][col] = params
+            self.model_params["text_cols"][col] = params
 
         for col in self.cate_cols:
             vocab = self.extract_categories(df[col])
             params = {"vocab": vocab}
             X_bin = self.categories_to_binary_matrix(df[col], vocab)
             self.X_dict[col + "_cate"] = X_bin
-            if prep_all_prob or col in self.prob_cols:
-                lr = LogisticRegression(max_iter=10000, random_state=self.random_state)
-
-                optimizer = BayesSearchCV(
-                    estimator=lr,
-                    search_spaces={
-                        'C': (0.01, 100.0, 'log-uniform'),
-                    },
-                    n_iter=10,
-                    cv=3,
-                    scoring='accuracy',
-                    random_state=self.random_state
-                )
-                optimizer.fit(X_bin, t)
-                best_params = optimizer.best_params_
+            if prep_all_prob or "cate" in self.prob_dict[col]:
+                # convert if probability convertion is specified
+                if tune_hyperparams:
+                    lr = LogisticRegression(max_iter=10000, random_state=self.random_state)
+                    optimizer = BayesSearchCV(
+                        estimator=lr,
+                        search_spaces={
+                            'C': (0.01, 100.0, 'log-uniform'),
+                        },
+                        n_iter=10,
+                        cv=5,
+                        scoring='accuracy',
+                        random_state=self.random_state
+                    )
+                    optimizer.fit(X_bin, t)
+                    best_params = optimizer.best_params_
+                else:
+                    best_params = self.model_params["cate_cols"][col]["hyperparams"]
 
                 best_lr = LogisticRegression(
                     C=best_params['C'],
@@ -168,17 +204,16 @@ class HybridModel(HybridModelPredictor):
                     random_state=self.random_state
                 )
                 best_lr.fit(X_bin, t)
-
                 params.update({
                     "w": best_lr.coef_,
                     "b": best_lr.intercept_,
-                    "best_params": best_params
+                    "hyperparams": best_params
                 })
                 self.X_dict[col + "_cate" + "_prob"] = self.compute_logistic_probabilities(
                     X_bin, best_lr.coef_, best_lr.intercept_
                 )
 
-            self.model_params["text_cols"][col] = params
+            self.model_params["cate_cols"][col] = params
 
     def optimize_feature_selection(self, df, cv=5, output_config_file="best_config.pkl", prep_all_prob=True):
         """
@@ -195,7 +230,7 @@ class HybridModel(HybridModelPredictor):
         Returns:
             (dict, float): Tuple of (best configuration dictionary, best CV score).
         """
-        self.prep_X_dict(df, prep_all_prob)
+        self.prep_X_dict(df, prep_all_prob, tune_hyperparams=True)
         columns = []
         available_reps = {}  # Maps column name to available representation types
 
@@ -250,7 +285,7 @@ class HybridModel(HybridModelPredictor):
 
             if X_full.shape[1] == 0:
                 continue
-            scores = cross_val_score(self.last_model, X_full, self.X_dict['t'], cv=cv, scoring='accuracy', random_state=self.random_state)
+            scores = cross_val_score(LogisticRegression(), X_full, self.X_dict['t'], cv=cv, scoring='accuracy')
             avg_score = scores.mean()
 
             if avg_score > best_score:
@@ -383,9 +418,152 @@ class NBParameterEstimator(BaseEstimator):
         return self.accuracy(y_pred, y)
 
 
+def cross_validation_test(df, hmodel, n_splits=5):
+    """
+    Perform cross validation on the given DataFrame using the specified model.
+
+    Parameters:
+    - df (pd.DataFrame): The dataset to perform cross validation on.
+    - hmodel: An instance of the model class with train and score methods.
+    - n_splits (int): The number of folds for cross validation.
+
+    Returns:
+    - scores (list): List of scores from each fold.
+    - avg_score (float): The average score across all folds.
+    """
+    kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
+    scores = []
+
+    for fold, (train_idx, test_idx) in enumerate(kf.split(df), start=1):
+        # Split the DataFrame into training and testing folds
+        df_train = df.iloc[train_idx]
+        df_test = df.iloc[test_idx]
+
+
+        # Train the model on the training data with hyperparameter tuning enabled
+        hmodel.train(df_train, tune_hyperparams=True)
+
+        # Evaluate the model on the testing data
+        score = hmodel.score(df_test)
+        scores.append(score)
+    avg_score = sum(scores) / len(scores)
+
+    return scores, avg_score
+
+
+def feature_selection_best_combination(df,
+                                       candidate_numeric_features,
+                                       candidate_text_features,
+                                       candidate_categorical_features,
+                                       prob_dict,
+                                       n_splits=5,
+                                       output_config_file="best_config.pkl",
+                                       loop_numeric=True,
+                                       loop_text=True,
+                                       loop_categorical=True):
+
+    best_result = {}
+    best_avg_score = float("-inf")  # Assuming higher score is better
+    c = 0
+
+    # Generate combinations based on the provided flags.
+    if loop_numeric:
+        numeric_combinations = list(itertools.chain.from_iterable(
+            itertools.combinations(candidate_numeric_features, r)
+            for r in range(0, len(candidate_numeric_features) + 1))
+        )
+    else:
+        numeric_combinations = [tuple(candidate_numeric_features)]
+
+    if loop_text:
+        text_combinations = list(itertools.chain.from_iterable(
+            itertools.combinations(candidate_text_features, r)
+            for r in range(0, len(candidate_text_features) + 1))
+        )
+    else:
+        text_combinations = [tuple(candidate_text_features)]
+
+
+    if loop_categorical:
+        categorical_combinations = list(itertools.chain.from_iterable(
+            itertools.combinations(candidate_categorical_features, r)
+            for r in range(0, len(candidate_categorical_features) + 1))
+        )
+    else:
+        categorical_combinations = [tuple(candidate_categorical_features)]
+
+    # Iterate over every combination from each feature group.
+    for numeric_subset in numeric_combinations:
+        for text_subset in text_combinations:
+            for categorical_subset in categorical_combinations:
+                # Skip if no features are selected from all groups.
+                if not (text_subset or categorical_subset):
+                    continue
+
+                # Convert tuples to lists for the model.
+                numeric_features = list(numeric_subset)
+                text_features = list(text_subset)
+                categorical_features = list(categorical_subset)
+                print("Testing combination:")
+                print("  Numeric:", numeric_features)
+                print("  Text:", text_features)
+                print("  Categorical:", categorical_features)
+
+                h_model = HybridModel(
+                    num_cols=numeric_features,
+                    text_cols=text_features,
+                    prob_dict=prob_dict,
+                    cate_cols=categorical_features,
+                    label_col="Label",
+                )
+
+                print(cross_validation_test(df, h_model, n_splits=5))
+                scores, avg_score = cross_validation_test(df, h_model, n_splits=n_splits)
+                print(avg_score)
+
+                # Store the combination if it's the best so far.
+                if avg_score > best_avg_score:
+                    best_avg_score = avg_score
+                    best_result = {
+                        "numeric_features": numeric_features,
+                        "text_features": text_features,
+                        "categorical_features": categorical_features,
+                        "prob_dict": prob_dict,
+                        "scores": scores,
+                        "avg_score": avg_score
+                    }
+                    print("New best combination found with average score:", best_avg_score)
+
+                c += 1
+                if c % 10 == 0:
+                    print("Tested combinations:", c)
+    # Save the best configuration to file.
+    if best_result is not None:
+        with open(output_config_file, "wb") as f:
+            pickle.dump(best_result, f)
+        print("Best configuration saved to", output_config_file)
+    else:
+        print("No valid configuration found.")
+
+    return best_result
+
+
+
 if __name__ == "__main__":
+
+    features = [
+        "Q1: From a scale 1 to 5, how complex is it to make this food? (Where 1 is the most simple, and 5 is the most complex)",
+        "Q2: How many ingredients would you expect this food item to contain?",
+        "Q3: In what setting would you expect this food to be served? Please check all that apply",
+        "Q4: How much would you expect to pay for one serving of this food item?",
+        "Q5: What movie do you think of when thinking of this food item?",
+        "Q6: What drink would you pair with this food item?",
+        "Q7: When you think about this food item, who does it remind you of?",
+        "Q8: How much hot sauce would you add to this food item?"
+    ]
+
     num_cols = [
-        # "Q1: From a scale 1 to 5, how complex is it to make this food? (Where 1 is the most simple, and 5 is the most complex)",
+        "Q1: From a scale 1 to 5, how complex is it to make this food? (Where 1 is the most simple, and 5 is the most complex)",
         # "Q2: How many ingredients would you expect this food item to contain?",
         # "Q3: In what setting would you expect this food to be served? Please check all that apply",
         # "Q4: How much would you expect to pay for one serving of this food item?",
@@ -401,22 +579,12 @@ if __name__ == "__main__":
         # "Q4: How much would you expect to pay for one serving of this food item?",
         # "Q5: What movie do you think of when thinking of this food item?",
         # "Q6: What drink would you pair with this food item?",
-        "Q7: When you think about this food item, who does it remind you of?",
-        "Q8: How much hot sauce would you add to this food item?"
+        # "Q7: When you think about this food item, who does it remind you of?",
+        # "Q8: How much hot sauce would you add to this food item?"
     ]
     text_columns = [
         # "Q1: From a scale 1 to 5, how complex is it to make this food? (Where 1 is the most simple, and 5 is the most complex)",
         "Q2: How many ingredients would you expect this food item to contain?",
-        # "Q3: In what setting would you expect this food to be served? Please check all that apply",
-        "Q4: How much would you expect to pay for one serving of this food item?",
-        "Q5: What movie do you think of when thinking of this food item?",
-        "Q6: What drink would you pair with this food item?",
-        # "Q7: When you think about this food item, who does it remind you of?",
-        # "Q8: How much hot sauce would you add to this food item?"
-    ]
-    prob_columns = [
-        # "Q1: From a scale 1 to 5, how complex is it to make this food? (Where 1 is the most simple, and 5 is the most complex)",
-        # "Q2: How many ingredients would you expect this food item to contain?",
         # "Q3: In what setting would you expect this food to be served? Please check all that apply",
         # "Q4: How much would you expect to pay for one serving of this food item?",
         # "Q5: What movie do you think of when thinking of this food item?",
@@ -424,6 +592,40 @@ if __name__ == "__main__":
         # "Q7: When you think about this food item, who does it remind you of?",
         # "Q8: How much hot sauce would you add to this food item?"
     ]
+    prob_selection_rev = {
+        "text":[
+            # "Q1: From a scale 1 to 5, how complex is it to make this food? (Where 1 is the most simple, and 5 is the most complex)",
+            # "Q2: How many ingredients would you expect this food item to contain?",
+            # "Q3: In what setting would you expect this food to be served? Please check all that apply",
+            # "Q4: How much would you expect to pay for one serving of this food item?",
+            # "Q5: What movie do you think of when thinking of this food item?",
+            # "Q6: What drink would you pair with this food item?",
+            # "Q7: When you think about this food item, who does it remind you of?",
+            # "Q8: How much hot sauce would you add to this food item?"
+        ]
+        ,
+        "cate":[
+            # "Q1: From a scale 1 to 5, how complex is it to make this food? (Where 1 is the most simple, and 5 is the most complex)",
+            # "Q2: How many ingredients would you expect this food item to contain?",
+            # "Q3: In what setting would you expect this food to be served? Please check all that apply",
+            # "Q4: How much would you expect to pay for one serving of this food item?",
+            # "Q5: What movie do you think of when thinking of this food item?",
+            # "Q6: What drink would you pair with this food item?",
+            # "Q7: When you think about this food item, who does it remind you of?",
+            # "Q8: How much hot sauce would you add to this food item?"
+        ]
+    }
+    def convert_prob_selection(prob_selection_rev, all_features):
+        new_mapping = {}
+        for f in all_features:
+            if f in prob_selection_rev.get("text", []):
+                new_mapping[f] = "text"
+            elif f in prob_selection_rev.get("cate", []):
+                new_mapping[f] = "cate"
+            else:
+                new_mapping[f] = "none"
+        return new_mapping
+    prob_selection = convert_prob_selection(prob_selection_rev, features)
 
     file_name = "cleaned_data_combined.csv"
     data_path = Path.cwd().parent / file_name
@@ -432,25 +634,32 @@ if __name__ == "__main__":
     df_train = df_shuffled.iloc[:int(len(df_shuffled) * 0.8)]  # Take first 80% of rows
     df_test = df_shuffled.iloc[int(len(df_shuffled) * 0.8):]
 
-    # print()
-    # with open("best_config.pkl", 'rb') as f:
-    #     best_features = pickle.load(f)
-    # for i in best_features:
-    #     print(i)
-    #     for j in best_features[i]:
-    #         print(j)
 
+    best_results = feature_selection_best_combination(df_train,
+                                       candidate_numeric_features = num_cols,
+                                       candidate_text_features = text_columns,
+                                       candidate_categorical_features = cate_cols,
+                                       prob_dict= prob_selection,
+                                       n_splits=5,
+                                       output_config_file="best_config.pkl",
+                                       loop_numeric=True,
+                                       loop_text=True,
+                                       loop_categorical=True)
+    print("best results:", best_results)
+
+    print("Testing combination:")
+    print("  Numeric:", num_cols)
+    print("  Text:", text_columns)
+    print("  Categorical:", cate_cols)
     hmodel = HybridModel(
         num_cols=num_cols,
         text_cols=text_columns,
-        prob_cols=prob_columns,
+        prob_dict=prob_selection,
         cate_cols=cate_cols,
         label_col="Label",
-        last_model=LogisticRegression(max_iter=10000)
     )
-    # best_features = hmodel.optimize_feature_selection(df)
-    last_model, params = hmodel.train(df_train)
-    print(hmodel.score(df_test))
+    # best_features = hmodel.optimize_feature_selection(df_train)
+    print(cross_validation_test(df_test, hmodel, n_splits=5))
 
 
 
