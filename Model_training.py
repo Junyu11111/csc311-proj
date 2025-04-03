@@ -49,6 +49,7 @@ class PercentageSVD:
 
 
 def train(df, xgen, tune_hyperparams=True, best_params=None):
+    best_score = 0
     X_train = df.drop(columns=["Label"])
     print("X_train.shape:", X_train.shape)
     t_train = df["Label"]
@@ -59,18 +60,6 @@ def train(df, xgen, tune_hyperparams=True, best_params=None):
         ('classifier', LogisticRegression(max_iter=10000))
     ])
 
-    param_grid = {
-        'transform__text_method': ['binary', 'tfidf'],
-        'svd__percentage': np.append(np.arange(0.9, 1.00, 0.01),1) ,
-        'classifier__C': [0.001, 0.01, 0.1, 0.2, 0.4, 0.6, 1, 10],
-    }
-
-    forest_search_space = {
-            "n_estimators": (50, 600, "uniform"),
-            "max_depth": (2, 100, "uniform"),
-            "min_samples_split": (2, 10, "uniform")
-        }
-
     LG_search_space = {
         "C": (1e-3, 1e4, "log-uniform"),
     }
@@ -78,7 +67,6 @@ def train(df, xgen, tune_hyperparams=True, best_params=None):
     search_space = {
         'transform__text_method': ['binary', 'tfidf'],
         'svd__percentage': (0.7, 1, "uniform"),
-        # "classifier__C": (1e-2, 1e4, "log-uniform"),
         **{f"classifier__{key}": value for key, value in LG_search_space.items()},
     }
 
@@ -103,7 +91,6 @@ def train(df, xgen, tune_hyperparams=True, best_params=None):
             raise ValueError("When tune_hyperparams is False, best_params must be provided.")
         best_pipeline = pipeline.set_params(**best_params)
         best_pipeline.fit(X_train, t_train)
-        best_score = best_pipeline.score(df_test, t_test)
     model_params = {}
     svd = best_pipeline.named_steps['svd'].svd
     classifier = best_pipeline.named_steps['classifier']
@@ -152,7 +139,7 @@ def feature_test(df, features_to_test, possible_assignment, num_cols, cate_cols,
 
 
 if __name__ == "__main__":
-    df = pd.read_csv("cleaned_data_combined.csv")
+    df = pd.read_csv("naive_bayes/cleaned_data_combined.csv")
     df_shuffled = df.sample(frac=1, random_state=42)  # Shuffle rows (set random_state for reproducibility)
     df_train = df_shuffled.iloc[:int(len(df_shuffled) * 0.8)]  # Take first 80% of rows
     df_test = df_shuffled.iloc[int(len(df_shuffled) * 0.8):]
@@ -198,8 +185,8 @@ if __name__ == "__main__":
     ]
 
 
-    xgen_filename = "xgen_params.pkl"
-    classifier_filename = "classifier_params.pkl"
+    xgen_filename = "naive_bayes/xgen_params.pkl"
+    classifier_filename = "naive_bayes/classifier_params.pkl"
     xgen = XGen(num_cols, cate_cols, text_cols, text_method="binary")
 
     # Train on
